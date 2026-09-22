@@ -1,0 +1,4103 @@
+{
+  "info": {
+    "name": "Meta Automation API",
+    "description": "مجموعة طلبات الـ API لمنصة أتمتة التعليقات وبوتات ماسنجر.\n\n1. عدّل المتغيرات من تبويب Variables في المجموعة (base_url، admin_email، admin_password، ...).\n2. الأدمن: نفّذ «تسجيل دخول الأدمن» ويُحفظ `admin_token` تلقائياً.\n3. العميل: نفّذ «رابط الدخول» وأكمل الدخول في المتصفح، ثم «إكمال الدخول» ويُحفظ `client_token`.\n4. طلبات الإنشاء تحفظ المعرّفات (rule_id، bot_flow_id، ...) تلقائياً لاستخدامها في الطلبات التالية.\n\nالمرجع الكامل: docs/API.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 · العميل · الدخول والاشتراك",
+      "description": "دخول العميل بفيسبوك، بياناته، وتفعيل مفتاح الاشتراك. هذه الطلبات لا تتطلب اشتراكاً فعّالاً.",
+      "item": [
+        {
+          "name": "Facebook: رابط الدخول",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/facebook/redirect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "facebook",
+                "redirect"
+              ]
+            },
+            "description": "يعيد رابط نافذة فيسبوك. افتحه في المتصفح؛ بعد الموافقة يعيد فيسبوك التوجيه إلى صفحة الواجهة (FACEBOOK_REDIRECT_URI) مع `code` و`state` في الرابط. انسخهما إلى متغيرَي `oauth_code` و`oauth_state` ثم نفّذ طلب الـ callback.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/facebook/redirect",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "facebook",
+                    "redirect"
+                  ]
+                },
+                "description": "يعيد رابط نافذة فيسبوك. افتحه في المتصفح؛ بعد الموافقة يعيد فيسبوك التوجيه إلى صفحة الواجهة (FACEBOOK_REDIRECT_URI) مع `code` و`state` في الرابط. انسخهما إلى متغيرَي `oauth_code` و`oauth_state` ثم نفّذ طلب الـ callback.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"url\": \"https://www.facebook.com/v23.0/dialog/oauth?client_id=test-app-id&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Ffacebook%2Fcallback&scope=email%2Cpublic_profile%2Cpages_show_list%2Cpages_read_engagement%2Cpages_read_user_content%2Cpages_manage_metadata%2Cpages_manage_engagement%2Cpages_messaging%2Cbusiness_management&response_type=code&state=TJgAIgZPRZqMOFWP7VOu5aip82em3zbm3Hb155hi\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Facebook: إكمال الدخول (callback)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/facebook/callback?code={{oauth_code}}&state={{oauth_state}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "facebook",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{oauth_code}}",
+                  "description": "الرمز القادم من فيسبوك",
+                  "disabled": false
+                },
+                {
+                  "key": "state",
+                  "value": "{{oauth_state}}",
+                  "description": "نفس state القادم من فيسبوك",
+                  "disabled": false
+                },
+                {
+                  "key": "error",
+                  "value": "access_denied",
+                  "description": "يُرسل بدل code إذا رفض المستخدم",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "يستبدل `code` بتوكن جلسة. `state` صالح لمرة واحدة ولمدة 10 دقائق. عند رفض المستخدم يرسل فيسبوك `error=access_denied` بدل `code`.\n\nيحفظ التوكن تلقائياً في `client_token`.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/facebook/callback?code={{oauth_code}}&state={{oauth_state}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "facebook",
+                    "callback"
+                  ],
+                  "query": [
+                    {
+                      "key": "code",
+                      "value": "{{oauth_code}}",
+                      "description": "الرمز القادم من فيسبوك",
+                      "disabled": false
+                    },
+                    {
+                      "key": "state",
+                      "value": "{{oauth_state}}",
+                      "description": "نفس state القادم من فيسبوك",
+                      "disabled": false
+                    },
+                    {
+                      "key": "error",
+                      "value": "access_denied",
+                      "description": "يُرسل بدل code إذا رفض المستخدم",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "يستبدل `code` بتوكن جلسة. `state` صالح لمرة واحدة ولمدة 10 دقائق. عند رفض المستخدم يرسل فيسبوك `error=access_denied` بدل `code`.\n\nيحفظ التوكن تلقائياً في `client_token`.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"2|pW1qIO0IFRS9eIqFVGjpkXclQpbQqcoQkPQFPyxrc867f922\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": \"https://scontent.xx.fbcdn.net/layla.jpg\",\n    \"fb_user_id\": \"10150000000001\",\n    \"facebook_token_expires_at\": \"2026-11-18T10:00:00+00:00\",\n    \"facebook_token_valid\": true,\n    \"subscription\": {\n      \"status\": \"active\",\n      \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n      \"activated_at\": \"2026-09-19T10:00:00+00:00\",\n      \"license_key\": \"*****-*****-*****-B3LDV\"\n    },\n    \"connected_pages_count\": 1,\n    \"last_login_at\": \"2026-09-19T10:00:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.token;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('client_token', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "بياناتي (me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            },
+            "description": "بيانات العميل وحالة اشتراكه. استخدم `data.subscription.status` لتقرر: `active` → لوحة التحكم، غير ذلك → شاشة إدخال مفتاح التفعيل."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                },
+                "description": "بيانات العميل وحالة اشتراكه. استخدم `data.subscription.status` لتقرر: `active` → لوحة التحكم، غير ذلك → شاشة إدخال مفتاح التفعيل."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": \"https://scontent.xx.fbcdn.net/layla.jpg\",\n    \"fb_user_id\": \"10150000000001\",\n    \"facebook_token_expires_at\": \"2026-11-18T10:00:00+00:00\",\n    \"facebook_token_valid\": true,\n    \"subscription\": {\n      \"status\": \"active\",\n      \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n      \"activated_at\": \"2026-09-19T10:00:00+00:00\",\n      \"license_key\": \"*****-*****-*****-B3LDV\"\n    },\n    \"connected_pages_count\": 1,\n    \"last_login_at\": \"2026-09-19T10:00:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "تفعيل مفتاح اشتراك",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/license-key/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "license-key",
+                "activate"
+              ]
+            },
+            "description": "يقبل المفتاح بأي حالة أحرف ومع أو بدون شرطات/مسافات. محدود بـ 5 محاولات في الدقيقة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"XXXXX-XXXXX-XXXXX-XXXXX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/license-key/activate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "license-key",
+                    "activate"
+                  ]
+                },
+                "description": "يقبل المفتاح بأي حالة أحرف ومع أو بدون شرطات/مسافات. محدود بـ 5 محاولات في الدقيقة.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"XXXXX-XXXXX-XXXXX-XXXXX\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"status\": \"active\",\n    \"expires_at\": \"2027-03-31T23:59:59+00:00\",\n    \"activated_at\": \"2026-09-19T10:00:00+00:00\",\n    \"license_key\": \"*****-*****-*****-M9YXE\"\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/license-key/activate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "license-key",
+                    "activate"
+                  ]
+                },
+                "description": "يقبل المفتاح بأي حالة أحرف ومع أو بدون شرطات/مسافات. محدود بـ 5 محاولات في الدقيقة.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"XXXXX-XXXXX-XXXXX-XXXXX\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"license_key.already_used\",\n  \"message\": \"This license key has already been used.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "تسجيل الخروج",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "يلغي التوكن الحالي فقط."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "logout"
+                  ]
+                },
+                "description": "يلغي التوكن الحالي فقط."
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{client_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "02 · العميل · الصفحات",
+      "description": "كل الطلبات تتطلب اشتراكاً فعّالاً. انتبه: المسار `{pageId}` هو معرّف فيسبوك للصفحة (`page_id`) وليس `id` قاعدة البيانات.",
+      "item": [
+        {
+          "name": "صفحاتي على فيسبوك",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pages"
+              ]
+            },
+            "description": "يجلب الصفحات مباشرة من Graph API مع حالة الربط لكل صفحة. غير مقسّم لصفحات، ومرتب بالاسم."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/pages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pages"
+                  ]
+                },
+                "description": "يجلب الصفحات مباشرة من Graph API مع حالة الربط لكل صفحة. غير مقسّم لصفحات، ومرتب بالاسم."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"page_id\": \"222222222222\",\n      \"name\": \"Cafe Nour\",\n      \"category\": \"Restaurant\",\n      \"picture_url\": \"https://scontent.xx.fbcdn.net/nour.jpg\",\n      \"tasks\": [\n        \"MODERATE\",\n        \"MESSAGING\"\n      ],\n      \"can_connect\": true,\n      \"is_connected\": false,\n      \"connected_by_another_account\": false,\n      \"facebook_page_id\": null\n    },\n    {\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"category\": \"Shopping & retail\",\n      \"picture_url\": \"https://scontent.xx.fbcdn.net/rose.jpg\",\n      \"tasks\": [\n        \"MODERATE\",\n        \"MESSAGING\",\n        \"MANAGE\"\n      ],\n      \"can_connect\": true,\n      \"is_connected\": true,\n      \"connected_by_another_account\": false,\n      \"facebook_page_id\": 1\n    }\n  ]\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.page_id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('page_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "الصفحات المربوطة",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pages/connected",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pages",
+                "connected"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "name",
+                  "description": "name | connected_at | created_at",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في اسم الصفحة",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "من قاعدة البيانات فقط (سريع). الترتيب الافتراضي بالاسم تصاعدياً."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/pages/connected",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pages",
+                    "connected"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "name",
+                      "description": "name | connected_at | created_at",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في اسم الصفحة",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "من قاعدة البيانات فقط (سريع). الترتيب الافتراضي بالاسم تصاعدياً."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 2,\n      \"page_id\": \"222222222222\",\n      \"name\": \"Cafe Nour\",\n      \"category\": \"Restaurant\",\n      \"picture_url\": \"https://scontent.xx.fbcdn.net/nour.jpg\",\n      \"is_connected\": true,\n      \"connected_at\": \"2026-09-19T10:00:00+00:00\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\",\n      \"automation_rules_count\": 0,\n      \"active_automation_rules_count\": 0,\n      \"bot_flows_count\": 0\n    },\n    {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"category\": \"Shopping & retail\",\n      \"picture_url\": \"https://scontent.xx.fbcdn.net/rose.jpg\",\n      \"is_connected\": true,\n      \"connected_at\": \"2026-09-10T12:00:00+00:00\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\",\n      \"automation_rules_count\": 1,\n      \"active_automation_rules_count\": 1,\n      \"bot_flows_count\": 1\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/pages/connected?page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/pages/connected?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/pages/connected\",\n    \"per_page\": 15,\n    \"to\": 2,\n    \"total\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل صفحة",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "صفحة للعميل (مربوطة أو سبق ربطها) مع العدادات."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/pages/{{page_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pages",
+                    "{{page_id}}"
+                  ]
+                },
+                "description": "صفحة للعميل (مربوطة أو سبق ربطها) مع العدادات."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"page_id\": \"111111111111\",\n    \"name\": \"متجر الورد\",\n    \"category\": \"Shopping & retail\",\n    \"picture_url\": \"https://scontent.xx.fbcdn.net/rose.jpg\",\n    \"is_connected\": true,\n    \"connected_at\": \"2026-09-10T12:00:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"automation_rules_count\": 1,\n    \"active_automation_rules_count\": 1,\n    \"bot_flows_count\": 1,\n    \"conversations_count\": 0,\n    \"activity_logs_count\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "ربط صفحة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pages/{{page_id}}/connect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pages",
+                "{{page_id}}",
+                "connect"
+              ]
+            },
+            "description": "يشترك التطبيق في webhooks الصفحة ويحفظ توكنها مشفّراً. يعيد 201 عند أول ربط و200 عند إعادة الربط."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/pages/{{page_id}}/connect",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pages",
+                    "{{page_id}}",
+                    "connect"
+                  ]
+                },
+                "description": "يشترك التطبيق في webhooks الصفحة ويحفظ توكنها مشفّراً. يعيد 201 عند أول ربط و200 عند إعادة الربط."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 2,\n    \"page_id\": \"222222222222\",\n    \"name\": \"Cafe Nour\",\n    \"category\": \"Restaurant\",\n    \"picture_url\": \"https://scontent.xx.fbcdn.net/nour.jpg\",\n    \"is_connected\": true,\n    \"connected_at\": \"2026-09-19T10:00:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"automation_rules_count\": 0,\n    \"active_automation_rules_count\": 0,\n    \"bot_flows_count\": 0\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('facebook_page_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "إلغاء ربط صفحة",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "يلغي اشتراك الـ webhooks ويحذف توكن الصفحة. القواعد والتدفقات تبقى محفوظة."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/pages/{{page_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "pages",
+                    "{{page_id}}"
+                  ]
+                },
+                "description": "يلغي اشتراك الـ webhooks ويحذف توكن الصفحة. القواعد والتدفقات تبقى محفوظة."
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{client_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "03 · العميل · قواعد الأتمتة",
+      "description": "ردود آلية بالكلمات المفتاحية على التعليقات (comment) أو رسائل ماسنجر (message).",
+      "item": [
+        {
+          "name": "قائمة القواعد",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rules"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "name | trigger_type | match_type | is_active | created_at | updated_at",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في اسم القاعدة",
+                  "disabled": true
+                },
+                {
+                  "key": "facebook_page_id",
+                  "value": "{{facebook_page_id}}",
+                  "description": "فلترة بصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "trigger_type",
+                  "value": "comment",
+                  "description": "comment | message",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "description": "true | false",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "مقسّمة لصفحات مع فرز وفلترة."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "name | trigger_type | match_type | is_active | created_at | updated_at",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في اسم القاعدة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "facebook_page_id",
+                      "value": "{{facebook_page_id}}",
+                      "description": "فلترة بصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "trigger_type",
+                      "value": "comment",
+                      "description": "comment | message",
+                      "disabled": true
+                    },
+                    {
+                      "key": "is_active",
+                      "value": "true",
+                      "description": "true | false",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "مقسّمة لصفحات مع فرز وفلترة."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"استفسار السعر\",\n      \"facebook_page\": {\n        \"id\": 1,\n        \"page_id\": \"111111111111\",\n        \"name\": \"متجر الورد\",\n        \"is_connected\": true\n      },\n      \"trigger_type\": \"comment\",\n      \"match_type\": \"contains\",\n      \"keywords\": [\n        \"السعر\",\n        \"price\",\n        \"بكم\"\n      ],\n      \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\",\n      \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n      \"is_active\": true,\n      \"created_at\": \"2026-09-19T10:00:00+00:00\",\n      \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/rules?sort=created_at&direction=desc&page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/rules?sort=created_at&direction=desc&page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/rules\",\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "إنشاء قاعدة",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rules"
+              ]
+            },
+            "description": "- `keywords` مطلوبة إلا إذا كان `match_type = any`.\n- `trigger_type = message` يتطلب `response_text` ويمنع `private_reply_text`.\n- `trigger_type = comment` يتطلب أحد النصين على الأقل.\n- الصفحة يجب أن تكون مربوطة وتابعة للعميل.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facebook_page_id\": {{facebook_page_id}},\n  \"name\": \"استفسار السعر\",\n  \"trigger_type\": \"comment\",\n  \"match_type\": \"contains\",\n  \"keywords\": [\n    \"السعر\",\n    \"price\",\n    \"بكم\"\n  ],\n  \"response_text\": \"أرسلنا لك التفاصيل على الخاص\",\n  \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules"
+                  ]
+                },
+                "description": "- `keywords` مطلوبة إلا إذا كان `match_type = any`.\n- `trigger_type = message` يتطلب `response_text` ويمنع `private_reply_text`.\n- `trigger_type = comment` يتطلب أحد النصين على الأقل.\n- الصفحة يجب أن تكون مربوطة وتابعة للعميل.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"facebook_page_id\": {{facebook_page_id}},\n  \"name\": \"استفسار السعر\",\n  \"trigger_type\": \"comment\",\n  \"match_type\": \"contains\",\n  \"keywords\": [\n    \"السعر\",\n    \"price\",\n    \"بكم\"\n  ],\n  \"response_text\": \"أرسلنا لك التفاصيل على الخاص\",\n  \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 2,\n    \"name\": \"مواعيد العمل\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"trigger_type\": \"message\",\n    \"match_type\": \"contains\",\n    \"keywords\": [\n      \"مواعيد\",\n      \"hours\"\n    ],\n    \"response_text\": \"نعمل يومياً من 9 صباحاً حتى 10 مساءً.\",\n    \"private_reply_text\": null,\n    \"is_active\": true,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules"
+                  ]
+                },
+                "description": "- `keywords` مطلوبة إلا إذا كان `match_type = any`.\n- `trigger_type = message` يتطلب `response_text` ويمنع `private_reply_text`.\n- `trigger_type = comment` يتطلب أحد النصين على الأقل.\n- الصفحة يجب أن تكون مربوطة وتابعة للعميل.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"facebook_page_id\": {{facebook_page_id}},\n  \"name\": \"استفسار السعر\",\n  \"trigger_type\": \"comment\",\n  \"match_type\": \"contains\",\n  \"keywords\": [\n    \"السعر\",\n    \"price\",\n    \"بكم\"\n  ],\n  \"response_text\": \"أرسلنا لك التفاصيل على الخاص\",\n  \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"validation.failed\",\n  \"message\": \"البيانات المرسلة غير صالحة.\",\n  \"errors\": {\n    \"name\": [\n      \"حقل الاسم مطلوب.\"\n    ],\n    \"keywords\": [\n      \"حقل الكلمات المفتاحية مطلوب.\"\n    ],\n    \"response_text\": [\n      \"حقل نص الرد مطلوب.\"\n    ]\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('rule_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل قاعدة",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rules/{{rule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rules",
+                "{{rule_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules/{{rule_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules",
+                    "{{rule_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"استفسار السعر\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"trigger_type\": \"comment\",\n    \"match_type\": \"contains\",\n    \"keywords\": [\n      \"السعر\",\n      \"price\",\n      \"بكم\"\n    ],\n    \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\",\n    \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n    \"is_active\": true,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "تعديل قاعدة",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rules/{{rule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rules",
+                "{{rule_id}}"
+              ]
+            },
+            "description": "أرسل الحقول المراد تغييرها فقط؛ التحقق يتم على الحالة النهائية المدمجة. PUT يعمل بنفس الطريقة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules/{{rule_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules",
+                    "{{rule_id}}"
+                  ]
+                },
+                "description": "أرسل الحقول المراد تغييرها فقط؛ التحقق يتم على الحالة النهائية المدمجة. PUT يعمل بنفس الطريقة.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_active\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"استفسار السعر\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"trigger_type\": \"comment\",\n    \"match_type\": \"contains\",\n    \"keywords\": [\n      \"السعر\",\n      \"price\",\n      \"بكم\"\n    ],\n    \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\",\n    \"private_reply_text\": \"أهلاً! أسعارنا تبدأ من 10 دولار.\",\n    \"is_active\": false,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "حذف قاعدة",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rules/{{rule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rules",
+                "{{rule_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/rules/{{rule_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rules",
+                    "{{rule_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{client_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "04 · العميل · تدفقات البوت",
+      "description": "تدفقات ماسنجر بخطوات وأزرار رد سريع. الحدود: 50 خطوة، 13 خياراً لكل خطوة، عنوان الخيار 20 حرفاً، نص الخطوة 2000 حرف.",
+      "item": [
+        {
+          "name": "قائمة التدفقات",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot-flows",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bot-flows"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "name | is_active | created_at | updated_at",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في اسم التدفق",
+                  "disabled": true
+                },
+                {
+                  "key": "facebook_page_id",
+                  "value": "{{facebook_page_id}}",
+                  "description": "فلترة بصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "description": "true | false",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bot-flows",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bot-flows"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "name | is_active | created_at | updated_at",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في اسم التدفق",
+                      "disabled": true
+                    },
+                    {
+                      "key": "facebook_page_id",
+                      "value": "{{facebook_page_id}}",
+                      "description": "فلترة بصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "is_active",
+                      "value": "true",
+                      "description": "true | false",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"القائمة الرئيسية\",\n      \"facebook_page\": {\n        \"id\": 1,\n        \"page_id\": \"111111111111\",\n        \"name\": \"متجر الورد\",\n        \"is_connected\": true\n      },\n      \"is_active\": true,\n      \"flow_json\": {\n        \"triggers\": [\n          \"القائمة\",\n          \"menu\"\n        ],\n        \"match_type\": \"exact\",\n        \"start_step\": \"welcome\",\n        \"steps\": [\n          {\n            \"id\": \"welcome\",\n            \"text\": \"أهلاً بك! كيف نقدر نساعدك؟\",\n            \"options\": [\n              {\n                \"label\": \"الأسعار\",\n                \"next_step\": \"prices\"\n              },\n              {\n                \"label\": \"الموقع\",\n                \"next_step\": \"location\"\n              }\n            ]\n          },\n          {\n            \"id\": \"prices\",\n            \"text\": \"أسعارنا تبدأ من 10 دولار.\",\n            \"options\": []\n          },\n          {\n            \"id\": \"location\",\n            \"text\": \"نحن في وسط المدينة.\",\n            \"options\": []\n          }\n        ]\n      },\n      \"steps_count\": 3,\n      \"created_at\": \"2026-09-19T10:00:00+00:00\",\n      \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/bot-flows?page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/bot-flows?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/bot-flows\",\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "إنشاء تدفق",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot-flows",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bot-flows"
+              ]
+            },
+            "description": "`start_step` و`next_step` يجب أن تشير لمعرّفات خطوات موجودة. الخطوة بلا خيارات تنهي التدفق.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facebook_page_id\": {{facebook_page_id}},\n  \"name\": \"القائمة الرئيسية\",\n  \"is_active\": true,\n  \"flow_json\": {\n    \"triggers\": [\n      \"القائمة\",\n      \"menu\"\n    ],\n    \"match_type\": \"exact\",\n    \"start_step\": \"welcome\",\n    \"steps\": [\n      {\n        \"id\": \"welcome\",\n        \"text\": \"أهلاً بك! كيف نقدر نساعدك؟\",\n        \"options\": [\n          {\n            \"label\": \"الأسعار\",\n            \"next_step\": \"prices\"\n          },\n          {\n            \"label\": \"الموقع\",\n            \"next_step\": \"location\"\n          }\n        ]\n      },\n      {\n        \"id\": \"prices\",\n        \"text\": \"أسعارنا تبدأ من 10 دولار.\",\n        \"options\": []\n      },\n      {\n        \"id\": \"location\",\n        \"text\": \"نحن في وسط المدينة.\",\n        \"options\": []\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bot-flows",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bot-flows"
+                  ]
+                },
+                "description": "`start_step` و`next_step` يجب أن تشير لمعرّفات خطوات موجودة. الخطوة بلا خيارات تنهي التدفق.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"facebook_page_id\": {{facebook_page_id}},\n  \"name\": \"القائمة الرئيسية\",\n  \"is_active\": true,\n  \"flow_json\": {\n    \"triggers\": [\n      \"القائمة\",\n      \"menu\"\n    ],\n    \"match_type\": \"exact\",\n    \"start_step\": \"welcome\",\n    \"steps\": [\n      {\n        \"id\": \"welcome\",\n        \"text\": \"أهلاً بك! كيف نقدر نساعدك؟\",\n        \"options\": [\n          {\n            \"label\": \"الأسعار\",\n            \"next_step\": \"prices\"\n          },\n          {\n            \"label\": \"الموقع\",\n            \"next_step\": \"location\"\n          }\n        ]\n      },\n      {\n        \"id\": \"prices\",\n        \"text\": \"أسعارنا تبدأ من 10 دولار.\",\n        \"options\": []\n      },\n      {\n        \"id\": \"location\",\n        \"text\": \"نحن في وسط المدينة.\",\n        \"options\": []\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 2,\n    \"name\": \"تتبع الطلب\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"is_active\": true,\n    \"flow_json\": {\n      \"triggers\": [\n        \"طلبي\",\n        \"order\"\n      ],\n      \"match_type\": \"contains\",\n      \"start_step\": \"ask\",\n      \"steps\": [\n        {\n          \"id\": \"ask\",\n          \"text\": \"هل وصلك الطلب؟\",\n          \"options\": [\n            {\n              \"label\": \"نعم\",\n              \"next_step\": \"thanks\"\n            },\n            {\n              \"label\": \"لا\",\n              \"next_step\": \"support\"\n            }\n          ]\n        },\n        {\n          \"id\": \"thanks\",\n          \"text\": \"شكراً لك!\",\n          \"options\": []\n        },\n        {\n          \"id\": \"support\",\n          \"text\": \"سيتواصل معك فريق الدعم قريباً.\",\n          \"options\": []\n        }\n      ]\n    },\n    \"steps_count\": 3,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('bot_flow_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل تدفق",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bot-flows",
+                "{{bot_flow_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bot-flows",
+                    "{{bot_flow_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"القائمة الرئيسية\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"is_active\": true,\n    \"flow_json\": {\n      \"triggers\": [\n        \"القائمة\",\n        \"menu\"\n      ],\n      \"match_type\": \"exact\",\n      \"start_step\": \"welcome\",\n      \"steps\": [\n        {\n          \"id\": \"welcome\",\n          \"text\": \"أهلاً بك! كيف نقدر نساعدك؟\",\n          \"options\": [\n            {\n              \"label\": \"الأسعار\",\n              \"next_step\": \"prices\"\n            },\n            {\n              \"label\": \"الموقع\",\n              \"next_step\": \"location\"\n            }\n          ]\n        },\n        {\n          \"id\": \"prices\",\n          \"text\": \"أسعارنا تبدأ من 10 دولار.\",\n          \"options\": []\n        },\n        {\n          \"id\": \"location\",\n          \"text\": \"نحن في وسط المدينة.\",\n          \"options\": []\n        }\n      ]\n    },\n    \"steps_count\": 3,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "تعديل تدفق",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bot-flows",
+                "{{bot_flow_id}}"
+              ]
+            },
+            "description": "إذا أُرسل `flow_json` فإنه يستبدل التعريف بالكامل.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"القائمة الرئيسية (محدثة)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bot-flows",
+                    "{{bot_flow_id}}"
+                  ]
+                },
+                "description": "إذا أُرسل `flow_json` فإنه يستبدل التعريف بالكامل.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"القائمة الرئيسية (محدثة)\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"القائمة الرئيسية (محدثة)\",\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"is_active\": true,\n    \"flow_json\": {\n      \"triggers\": [\n        \"القائمة\",\n        \"menu\"\n      ],\n      \"match_type\": \"exact\",\n      \"start_step\": \"welcome\",\n      \"steps\": [\n        {\n          \"id\": \"welcome\",\n          \"text\": \"أهلاً بك! كيف نقدر نساعدك؟\",\n          \"options\": [\n            {\n              \"label\": \"الأسعار\",\n              \"next_step\": \"prices\"\n            },\n            {\n              \"label\": \"الموقع\",\n              \"next_step\": \"location\"\n            }\n          ]\n        },\n        {\n          \"id\": \"prices\",\n          \"text\": \"أسعارنا تبدأ من 10 دولار.\",\n          \"options\": []\n        },\n        {\n          \"id\": \"location\",\n          \"text\": \"نحن في وسط المدينة.\",\n          \"options\": []\n        }\n      ]\n    },\n    \"steps_count\": 3,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"updated_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "حذف تدفق",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "bot-flows",
+                "{{bot_flow_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/bot-flows/{{bot_flow_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bot-flows",
+                    "{{bot_flow_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{client_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "05 · العميل · سجل النشاط",
+      "description": "كل رد آلي نفّذته المنصة (ناجح أو فاشل) لصفحات العميل.",
+      "item": [
+        {
+          "name": "سجل النشاط",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/activity-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "activity-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "created_at | event_type | status",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في اسم الصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "facebook_page_id",
+                  "value": "{{facebook_page_id}}",
+                  "description": "فلترة بصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "event_type",
+                  "value": "comment_reply",
+                  "description": "comment_reply | private_reply | message_reply | flow_step",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "success",
+                  "description": "success | failed",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "2026-09-01",
+                  "description": "YYYY-MM-DD (شامل)",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "2026-09-30",
+                  "description": "YYYY-MM-DD (شامل لليوم كاملاً)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/activity-logs",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "activity-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "created_at | event_type | status",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في اسم الصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "facebook_page_id",
+                      "value": "{{facebook_page_id}}",
+                      "description": "فلترة بصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "event_type",
+                      "value": "comment_reply",
+                      "description": "comment_reply | private_reply | message_reply | flow_step",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "success",
+                      "description": "success | failed",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date_from",
+                      "value": "2026-09-01",
+                      "description": "YYYY-MM-DD (شامل)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date_to",
+                      "value": "2026-09-30",
+                      "description": "YYYY-MM-DD (شامل لليوم كاملاً)",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"event_type\": \"comment_reply\",\n      \"status\": \"success\",\n      \"payload\": {\n        \"rule_id\": 1,\n        \"rule_name\": \"استفسار السعر\",\n        \"post_id\": \"111111111111_900\",\n        \"comment_id\": \"900_1234\",\n        \"sender_id\": \"5550001\",\n        \"sender_name\": \"Omar\",\n        \"incoming_text\": \"بكم السعر؟\",\n        \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\"\n      },\n      \"facebook_page\": {\n        \"id\": 1,\n        \"page_id\": \"111111111111\",\n        \"name\": \"متجر الورد\",\n        \"is_connected\": true\n      },\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/activity-logs?status=success&date_from=2026-09-01&date_to=2026-09-30&page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/activity-logs?status=success&date_from=2026-09-01&date_to=2026-09-30&page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/activity-logs\",\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('activity_log_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل حدث",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/activity-logs/{{activity_log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "activity-logs",
+                "{{activity_log_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/activity-logs/{{activity_log_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "activity-logs",
+                    "{{activity_log_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"event_type\": \"comment_reply\",\n    \"status\": \"success\",\n    \"payload\": {\n      \"rule_id\": 1,\n      \"rule_name\": \"استفسار السعر\",\n      \"post_id\": \"111111111111_900\",\n      \"comment_id\": \"900_1234\",\n      \"sender_id\": \"5550001\",\n      \"sender_name\": \"Omar\",\n      \"incoming_text\": \"بكم السعر؟\",\n      \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\"\n    },\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{client_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "06 · الأدمن · الدخول",
+      "description": "",
+      "item": [
+        {
+          "name": "تسجيل دخول الأدمن",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "محدود بـ 5 محاولات في الدقيقة. يحفظ التوكن تلقائياً في `admin_token`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "login"
+                  ]
+                },
+                "description": "محدود بـ 5 محاولات في الدقيقة. يحفظ التوكن تلقائياً في `admin_token`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"1|8w7XvedOiqE0aBaHLFrxVzhraQbupgNu54KEvtBW8b5473b4\",\n  \"admin\": {\n    \"id\": 1,\n    \"name\": \"Platform Owner\",\n    \"email\": \"owner@example.com\",\n    \"last_login_at\": \"2026-09-19T10:00:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.token;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('admin_token', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "بيانات الأدمن",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "me"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Platform Owner\",\n    \"email\": \"owner@example.com\",\n    \"last_login_at\": null,\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "تسجيل خروج الأدمن",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "logout"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "logout"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{admin_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "07 · الأدمن · العملاء",
+      "description": "",
+      "item": [
+        {
+          "name": "قائمة العملاء",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/clients",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "clients"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "name | email | subscription_expires_at | connected_pages_count | last_login_at | created_at",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في الاسم أو البريد",
+                  "disabled": true
+                },
+                {
+                  "key": "subscription_status",
+                  "value": "active",
+                  "description": "active | expired | none",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/clients",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "clients"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "name | email | subscription_expires_at | connected_pages_count | last_login_at | created_at",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في الاسم أو البريد",
+                      "disabled": true
+                    },
+                    {
+                      "key": "subscription_status",
+                      "value": "active",
+                      "description": "active | expired | none",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Layla Hassan\",\n      \"email\": \"layla@example.com\",\n      \"avatar_url\": \"https://scontent.xx.fbcdn.net/layla.jpg\",\n      \"subscription_status\": \"active\",\n      \"subscription_expires_at\": \"2026-12-31T23:59:59+00:00\",\n      \"connected_pages_count\": 1,\n      \"last_login_at\": \"2026-09-19T09:30:00+00:00\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Sami Ali\",\n      \"email\": \"sami@example.com\",\n      \"avatar_url\": \"https://via.placeholder.com/640x480.png/004488?text=optio\",\n      \"subscription_status\": \"none\",\n      \"subscription_expires_at\": null,\n      \"connected_pages_count\": 0,\n      \"last_login_at\": \"2026-09-01T08:00:00+00:00\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/admin/clients?sort=name&direction=asc&per_page=15&page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/admin/clients?sort=name&direction=asc&per_page=15&page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/admin/clients\",\n    \"per_page\": 15,\n    \"to\": 2,\n    \"total\": 2\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('client_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل عميل",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/clients/{{client_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "clients",
+                "{{client_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/clients/{{client_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "clients",
+                    "{{client_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": \"https://scontent.xx.fbcdn.net/layla.jpg\",\n    \"subscription_status\": \"active\",\n    \"subscription_expires_at\": \"2026-12-31T23:59:59+00:00\",\n    \"connected_pages_count\": 1,\n    \"last_login_at\": \"2026-09-19T09:30:00+00:00\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\",\n    \"fb_user_id\": \"10150000000001\",\n    \"facebook_token_expires_at\": \"2026-11-18T10:00:00+00:00\",\n    \"active_license_key\": {\n      \"id\": 1,\n      \"key\": \"K7M2Q-XR4TP-9WHNC-B3LDV\",\n      \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n      \"used_at\": \"2026-09-19T10:00:00+00:00\"\n    },\n    \"pages\": [\n      {\n        \"id\": 1,\n        \"page_id\": \"111111111111\",\n        \"name\": \"متجر الورد\",\n        \"category\": \"Shopping & retail\",\n        \"picture_url\": \"https://scontent.xx.fbcdn.net/rose.jpg\",\n        \"is_connected\": true,\n        \"connected_at\": \"2026-09-10T12:00:00+00:00\"\n      }\n    ],\n    \"license_keys_history\": [\n      {\n        \"id\": 1,\n        \"key\": \"K7M2Q-XR4TP-9WHNC-B3LDV\",\n        \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n        \"used_at\": \"2026-09-19T10:00:00+00:00\"\n      }\n    ],\n    \"automation_rules_count\": 1,\n    \"bot_flows_count\": 1,\n    \"activity_logs_count\": 1\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{admin_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "08 · الأدمن · مفاتيح الاشتراك",
+      "description": "",
+      "item": [
+        {
+          "name": "قائمة المفاتيح",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/license-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "license-keys"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "created_at | expires_at | used_at | key | is_used",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في المفتاح أو الملاحظة أو اسم/بريد العميل",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "available",
+                  "description": "available | used | expired",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/license-keys",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "license-keys"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "created_at | expires_at | used_at | key | is_used",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في المفتاح أو الملاحظة أو اسم/بريد العميل",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "available",
+                      "description": "available | used | expired",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 3,\n      \"key\": \"JUWFB-V67HR-QQF6C-7PQ2Q\",\n      \"status\": \"available\",\n      \"is_used\": false,\n      \"is_expired\": false,\n      \"expires_at\": \"2027-03-31T23:59:59+00:00\",\n      \"used_at\": null,\n      \"used_by\": null,\n      \"created_by\": {\n        \"id\": 1,\n        \"name\": \"Platform Owner\"\n      },\n      \"note\": \"Ramadan offer\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    },\n    {\n      \"id\": 2,\n      \"key\": \"CJ47U-FBCH6-S2JAK-DLH5Z\",\n      \"status\": \"available\",\n      \"is_used\": false,\n      \"is_expired\": false,\n      \"expires_at\": \"2027-03-31T23:59:59+00:00\",\n      \"used_at\": null,\n      \"used_by\": null,\n      \"created_by\": {\n        \"id\": 1,\n        \"name\": \"Platform Owner\"\n      },\n      \"note\": \"Ramadan offer\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/admin/license-keys?status=available&page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/admin/license-keys?status=available&page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/admin/license-keys\",\n    \"per_page\": 15,\n    \"to\": 2,\n    \"total\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "توليد مفاتيح",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/license-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "license-keys"
+              ]
+            },
+            "description": "`expires_at` تاريخ مستقبلي وهو نفسه تاريخ انتهاء اشتراك من يفعّل المفتاح. `quantity` من 1 إلى 100 (الافتراضي 1). الرد دائماً مصفوفة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expires_at\": \"2027-03-31T23:59:59Z\",\n  \"note\": \"Ramadan offer\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/license-keys",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "license-keys"
+                  ]
+                },
+                "description": "`expires_at` تاريخ مستقبلي وهو نفسه تاريخ انتهاء اشتراك من يفعّل المفتاح. `quantity` من 1 إلى 100 (الافتراضي 1). الرد دائماً مصفوفة.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"expires_at\": \"2027-03-31T23:59:59Z\",\n  \"note\": \"Ramadan offer\",\n  \"quantity\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 2,\n      \"key\": \"CJ47U-FBCH6-S2JAK-DLH5Z\",\n      \"status\": \"available\",\n      \"is_used\": false,\n      \"is_expired\": false,\n      \"expires_at\": \"2027-03-31T23:59:59+00:00\",\n      \"used_at\": null,\n      \"used_by\": null,\n      \"created_by\": {\n        \"id\": 1,\n        \"name\": \"Platform Owner\"\n      },\n      \"note\": \"Ramadan offer\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    },\n    {\n      \"id\": 3,\n      \"key\": \"JUWFB-V67HR-QQF6C-7PQ2Q\",\n      \"status\": \"available\",\n      \"is_used\": false,\n      \"is_expired\": false,\n      \"expires_at\": \"2027-03-31T23:59:59+00:00\",\n      \"used_at\": null,\n      \"used_by\": null,\n      \"created_by\": {\n        \"id\": 1,\n        \"name\": \"Platform Owner\"\n      },\n      \"note\": \"Ramadan offer\",\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ]\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('license_key_id', String(value));",
+                  "    }",
+                  "}",
+                  "",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.key;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('license_key', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل مفتاح",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/license-keys/{{license_key_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "license-keys",
+                "{{license_key_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/license-keys/{{license_key_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "license-keys",
+                    "{{license_key_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"key\": \"K7M2Q-XR4TP-9WHNC-B3LDV\",\n    \"status\": \"used\",\n    \"is_used\": true,\n    \"is_expired\": false,\n    \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n    \"used_at\": \"2026-09-19T10:00:00+00:00\",\n    \"used_by\": {\n      \"id\": 1,\n      \"name\": \"Layla Hassan\",\n      \"email\": \"layla@example.com\"\n    },\n    \"created_by\": {\n      \"id\": 1,\n      \"name\": \"Platform Owner\"\n    },\n    \"note\": \"Quarterly plan\",\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "حذف مفتاح",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/license-keys/{{license_key_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "license-keys",
+                "{{license_key_id}}"
+              ]
+            },
+            "description": "للمفاتيح غير المستخدمة فقط."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/license-keys/{{license_key_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "license-keys",
+                    "{{license_key_id}}"
+                  ]
+                },
+                "description": "للمفاتيح غير المستخدمة فقط."
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/license-keys/{{license_key_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "license-keys",
+                    "{{license_key_id}}"
+                  ]
+                },
+                "description": "للمفاتيح غير المستخدمة فقط."
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"license_key.used_cannot_be_deleted\",\n  \"message\": \"A license key that has been used cannot be deleted.\"\n}"
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{admin_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "09 · الأدمن · الإحصائيات",
+      "description": "",
+      "item": [
+        {
+          "name": "الإحصائيات العامة",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "stats"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"clients\": {\n      \"total\": 1,\n      \"active_subscriptions\": 1,\n      \"expired_subscriptions\": 0,\n      \"without_subscription\": 0\n    },\n    \"pages\": {\n      \"connected\": 1,\n      \"total\": 1\n    },\n    \"automation\": {\n      \"replies_total\": 1,\n      \"replies_last_30_days\": 1,\n      \"failed_total\": 0\n    },\n    \"license_keys\": {\n      \"issued\": 1,\n      \"used\": 1,\n      \"remaining\": 0,\n      \"expired_unused\": 0\n    }\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{admin_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "10 · الأدمن · سجل النشاط",
+      "description": "",
+      "item": [
+        {
+          "name": "سجل نشاط كل العملاء",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/activity-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "activity-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "رقم الصفحة (يبدأ من 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                  "disabled": true
+                },
+                {
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "اتجاه الترتيب: asc | desc",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "created_at | event_type | status",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "بحث في اسم الصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "facebook_page_id",
+                  "value": "{{facebook_page_id}}",
+                  "description": "فلترة بصفحة",
+                  "disabled": true
+                },
+                {
+                  "key": "event_type",
+                  "value": "comment_reply",
+                  "description": "comment_reply | private_reply | message_reply | flow_step",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "success",
+                  "description": "success | failed",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "2026-09-01",
+                  "description": "YYYY-MM-DD (شامل)",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "2026-09-30",
+                  "description": "YYYY-MM-DD (شامل لليوم كاملاً)",
+                  "disabled": true
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{client_id}}",
+                  "description": "فلترة بعميل",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/activity-logs",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "activity-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "رقم الصفحة (يبدأ من 1)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15",
+                      "description": "عدد العناصر في الصفحة (1 إلى 100، الافتراضي 15)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc",
+                      "description": "اتجاه الترتيب: asc | desc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at",
+                      "description": "created_at | event_type | status",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "",
+                      "description": "بحث في اسم الصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "facebook_page_id",
+                      "value": "{{facebook_page_id}}",
+                      "description": "فلترة بصفحة",
+                      "disabled": true
+                    },
+                    {
+                      "key": "event_type",
+                      "value": "comment_reply",
+                      "description": "comment_reply | private_reply | message_reply | flow_step",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "success",
+                      "description": "success | failed",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date_from",
+                      "value": "2026-09-01",
+                      "description": "YYYY-MM-DD (شامل)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "date_to",
+                      "value": "2026-09-30",
+                      "description": "YYYY-MM-DD (شامل لليوم كاملاً)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "user_id",
+                      "value": "{{client_id}}",
+                      "description": "فلترة بعميل",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"event_type\": \"comment_reply\",\n      \"status\": \"success\",\n      \"payload\": {\n        \"rule_id\": 1,\n        \"rule_name\": \"استفسار السعر\",\n        \"post_id\": \"111111111111_900\",\n        \"comment_id\": \"900_1234\",\n        \"sender_id\": \"5550001\",\n        \"sender_name\": \"Omar\",\n        \"incoming_text\": \"بكم السعر؟\",\n        \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\"\n      },\n      \"facebook_page\": {\n        \"id\": 1,\n        \"page_id\": \"111111111111\",\n        \"name\": \"متجر الورد\",\n        \"is_connected\": true\n      },\n      \"client\": {\n        \"id\": 1,\n        \"name\": \"Layla Hassan\",\n        \"email\": \"layla@example.com\"\n      },\n      \"created_at\": \"2026-09-19T10:00:00+00:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://automation_backend.test:8000/api/admin/activity-logs?user_id=1&page=1\",\n    \"last\": \"http://automation_backend.test:8000/api/admin/activity-logs?user_id=1&page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      \"...\"\n    ],\n    \"path\": \"http://automation_backend.test:8000/api/admin/activity-logs\",\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.data?.[0]?.id;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('activity_log_id', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "تفاصيل حدث",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/activity-logs/{{activity_log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "activity-logs",
+                "{{activity_log_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/admin/activity-logs/{{activity_log_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "activity-logs",
+                    "{{activity_log_id}}"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"event_type\": \"comment_reply\",\n    \"status\": \"success\",\n    \"payload\": {\n      \"rule_id\": 1,\n      \"rule_name\": \"استفسار السعر\",\n      \"post_id\": \"111111111111_900\",\n      \"comment_id\": \"900_1234\",\n      \"sender_id\": \"5550001\",\n      \"sender_name\": \"Omar\",\n      \"incoming_text\": \"بكم السعر؟\",\n      \"response_text\": \"أرسلنا لك التفاصيل على الخاص 🌹\"\n    },\n    \"facebook_page\": {\n      \"id\": 1,\n      \"page_id\": \"111111111111\",\n      \"name\": \"متجر الورد\",\n      \"is_connected\": true\n    },\n    \"client\": {\n      \"id\": 1,\n      \"name\": \"Layla Hassan\",\n      \"email\": \"layla@example.com\"\n    },\n    \"created_at\": \"2026-09-19T10:00:00+00:00\"\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{admin_token}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "11 · Webhook (محاكاة Meta للاختبار المحلي)",
+      "description": "ليست للواجهة. تحاكي ما ترسله Meta لاختبار الأتمتة محلياً. التوقيع `X-Hub-Signature-256` يُحسب تلقائياً من `app_secret` (يجب أن يساوي FACEBOOK_CLIENT_SECRET). تذكّر تشغيل `php artisan queue:work`.",
+      "item": [
+        {
+          "name": "تحقق الاشتراك (hub.challenge)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/webhook?hub.mode=subscribe&hub.verify_token={{webhook_verify_token}}&hub.challenge=1158201444",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "webhook"
+              ],
+              "query": [
+                {
+                  "key": "hub.mode",
+                  "value": "subscribe",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "hub.verify_token",
+                  "value": "{{webhook_verify_token}}",
+                  "description": "يساوي META_WEBHOOK_VERIFY_TOKEN",
+                  "disabled": false
+                },
+                {
+                  "key": "hub.challenge",
+                  "value": "1158201444",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "ما ترسله Meta عند حفظ رابط الـ webhook. يعيد قيمة challenge كنص.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "حدث تعليق جديد",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "webhook"
+              ]
+            },
+            "description": "تعليق جديد على منشور الصفحة `{{page_id}}` (يجب أن تكون مربوطة).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"page\",\n  \"entry\": [\n    {\n      \"id\": \"{{page_id}}\",\n      \"time\": 1758276000,\n      \"changes\": [\n        {\n          \"field\": \"feed\",\n          \"value\": {\n            \"item\": \"comment\",\n            \"verb\": \"add\",\n            \"post_id\": \"{{page_id}}_900\",\n            \"comment_id\": \"900_{{webhook_event_id}}\",\n            \"from\": { \"id\": \"5550001\", \"name\": \"Omar\" },\n            \"message\": \"بكم السعر؟\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cryptoJs = require('crypto-js');",
+                  "pm.collectionVariables.set('webhook_event_id', String(Date.now()));",
+                  "const rawBody = pm.variables.replaceIn(pm.request.body.raw);",
+                  "const signature = cryptoJs.HmacSHA256(rawBody, pm.variables.get('app_secret')).toString(cryptoJs.enc.Hex);",
+                  "pm.request.headers.upsert({ key: 'X-Hub-Signature-256', value: 'sha256=' + signature });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "حدث رسالة ماسنجر",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "webhook"
+              ]
+            },
+            "description": "رسالة نصية من مستخدم ماسنجر إلى الصفحة.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"page\",\n  \"entry\": [\n    {\n      \"id\": \"{{page_id}}\",\n      \"time\": 1758276000,\n      \"messaging\": [\n        {\n          \"sender\": { \"id\": \"7770001\" },\n          \"recipient\": { \"id\": \"{{page_id}}\" },\n          \"timestamp\": 1758276000123,\n          \"message\": { \"mid\": \"m_{{webhook_event_id}}\", \"text\": \"القائمة\" }\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cryptoJs = require('crypto-js');",
+                  "pm.collectionVariables.set('webhook_event_id', String(Date.now()));",
+                  "const rawBody = pm.variables.replaceIn(pm.request.body.raw);",
+                  "const signature = cryptoJs.HmacSHA256(rawBody, pm.variables.get('app_secret')).toString(cryptoJs.enc.Hex);",
+                  "pm.request.headers.upsert({ key: 'X-Hub-Signature-256', value: 'sha256=' + signature });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "12 · استدعاءات حساب فيسبوك (محاكاة)",
+      "description": "ما ترسله Meta عندما يحذف العميل التطبيق من إعدادات فيسبوك أو يطلب حذف بياناته. الطلبان يوقّعان `signed_request` تلقائياً من `app_secret` و`fb_user_id`.",
+      "item": [
+        {
+          "name": "إلغاء تصريح العميل (deauthorize)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/facebook/deauthorize",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facebook",
+                "deauthorize"
+              ]
+            },
+            "description": "يفصل كل صفحات العميل ويحذف توكناته. بيانات العميل وقواعده تبقى محفوظة.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "signed_request",
+                  "value": "{{signed_request}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cryptoJs = require('crypto-js');",
+                  "const base64Url = (wordArray) => cryptoJs.enc.Base64.stringify(wordArray).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');",
+                  "const payload = JSON.stringify({",
+                  "    algorithm: 'HMAC-SHA256',",
+                  "    issued_at: Math.floor(Date.now() / 1000),",
+                  "    user_id: pm.variables.get('fb_user_id'),",
+                  "});",
+                  "const encodedPayload = base64Url(cryptoJs.enc.Utf8.parse(payload));",
+                  "const signature = base64Url(cryptoJs.HmacSHA256(encodedPayload, pm.variables.get('app_secret')));",
+                  "pm.collectionVariables.set('signed_request', signature + '.' + encodedPayload);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "طلب حذف البيانات",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/facebook/data-deletion",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facebook",
+                "data-deletion"
+              ]
+            },
+            "description": "يحذف العميل وكل بياناته نهائياً، ويعيد `url` و`confirmation_code` كما تطلب Meta.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "signed_request",
+                  "value": "{{signed_request}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cryptoJs = require('crypto-js');",
+                  "const base64Url = (wordArray) => cryptoJs.enc.Base64.stringify(wordArray).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');",
+                  "const payload = JSON.stringify({",
+                  "    algorithm: 'HMAC-SHA256',",
+                  "    issued_at: Math.floor(Date.now() / 1000),",
+                  "    user_id: pm.variables.get('fb_user_id'),",
+                  "});",
+                  "const encodedPayload = base64Url(cryptoJs.enc.Utf8.parse(payload));",
+                  "const signature = base64Url(cryptoJs.HmacSHA256(encodedPayload, pm.variables.get('app_secret')));",
+                  "pm.collectionVariables.set('signed_request', signature + '.' + encodedPayload);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.confirmation_code;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('deletion_confirmation_code', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "حالة طلب الحذف",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/facebook/data-deletion/status?code={{deletion_confirmation_code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facebook",
+                "data-deletion",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{deletion_confirmation_code}}",
+                  "description": "رمز التأكيد",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "الصفحة التي تفتحها Meta للعميل ليتابع حالة طلبه.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://automation_backend.test:8000",
+      "description": "رابط الـ API بدون شرطة في النهاية"
+    },
+    {
+      "key": "locale",
+      "value": "ar",
+      "description": "ar | en — لغة رسائل الأخطاء"
+    },
+    {
+      "key": "admin_email",
+      "value": "owner@example.com"
+    },
+    {
+      "key": "admin_password",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "client_token",
+      "value": ""
+    },
+    {
+      "key": "oauth_code",
+      "value": ""
+    },
+    {
+      "key": "oauth_state",
+      "value": ""
+    },
+    {
+      "key": "page_id",
+      "value": "",
+      "description": "معرّف فيسبوك للصفحة (يُستخدم في مسارات /api/pages/{pageId})"
+    },
+    {
+      "key": "facebook_page_id",
+      "value": "",
+      "description": "id الصفحة في قاعدة البيانات (يُستخدم في أجسام القواعد والتدفقات)"
+    },
+    {
+      "key": "rule_id",
+      "value": ""
+    },
+    {
+      "key": "bot_flow_id",
+      "value": ""
+    },
+    {
+      "key": "activity_log_id",
+      "value": ""
+    },
+    {
+      "key": "client_id",
+      "value": ""
+    },
+    {
+      "key": "license_key_id",
+      "value": ""
+    },
+    {
+      "key": "license_key",
+      "value": ""
+    },
+    {
+      "key": "app_secret",
+      "value": "",
+      "description": "نفس FACEBOOK_CLIENT_SECRET لتوقيع أحداث الـ webhook"
+    },
+    {
+      "key": "webhook_verify_token",
+      "value": "",
+      "description": "نفس META_WEBHOOK_VERIFY_TOKEN"
+    },
+    {
+      "key": "webhook_event_id",
+      "value": "",
+      "description": "يُولَّد تلقائياً قبل كل حدث webhook"
+    },
+    {
+      "key": "fb_user_id",
+      "value": "",
+      "description": "معرّف العميل على فيسبوك لمحاكاة استدعاءات الحساب"
+    },
+    {
+      "key": "signed_request",
+      "value": "",
+      "description": "يُولَّد تلقائياً"
+    },
+    {
+      "key": "deletion_confirmation_code",
+      "value": ""
+    }
+  ]
+}
