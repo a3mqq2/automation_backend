@@ -19,6 +19,7 @@ class FlowSimulator
         $definition = $flow->draftDefinition();
         $version = new BotFlowVersion(['bot_flow_id' => $flow->id, 'version' => 0, 'definition' => (array) $flow->flow_json]);
         $session = new SimulatedFlowSession();
+        $page = $flow->facebookPage()->first();
         $transcript = [];
 
         foreach ($messages as $text) {
@@ -32,7 +33,7 @@ class FlowSimulator
                 session: $session,
                 psid: 'simulator',
                 incomingText: $text,
-                page: null,
+                page: $page,
                 simulating: true,
             );
 
