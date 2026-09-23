@@ -5,11 +5,13 @@ use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Api\Admin\ClientController;
 use App\Http\Controllers\Api\Admin\LicenseKeyController;
 use App\Http\Controllers\Api\Admin\StatsController;
+use App\Http\Controllers\Api\Auth\ClientAuthController;
 use App\Http\Controllers\Api\Auth\FacebookAuthController;
 use App\Http\Controllers\Api\Client\ActivityLogController;
 use App\Http\Controllers\Api\Client\AutomationRuleController;
 use App\Http\Controllers\Api\Client\BotFlowController;
 use App\Http\Controllers\Api\Client\ConnectedPageController;
+use App\Http\Controllers\Api\Client\FacebookLinkController;
 use App\Http\Controllers\Api\Client\LicenseActivationController;
 use App\Http\Controllers\Api\Client\MediaController;
 use App\Http\Controllers\Api\Client\PageConnectionController;
@@ -23,6 +25,11 @@ use App\Http\Controllers\Api\Client\SessionController;
 use App\Http\Controllers\Api\Webhook\FacebookAccountController;
 use App\Http\Controllers\Api\Webhook\MetaWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('auth')->controller(ClientAuthController::class)->group(function (): void {
+    Route::post('register', 'register')->middleware('throttle:client-registration');
+    Route::post('login', 'login')->middleware('throttle:client-login');
+});
 
 Route::prefix('auth/facebook')
     ->middleware('throttle:facebook-auth')
@@ -39,6 +46,14 @@ Route::middleware(['auth:sanctum', 'client'])->group(function (): void {
         ->middleware('throttle:license-activation');
 
     Route::middleware('subscribed')->group(function (): void {
+        Route::prefix('auth/facebook/link')
+            ->middleware('throttle:facebook-auth')
+            ->controller(FacebookLinkController::class)
+            ->group(function (): void {
+                Route::get('', 'redirect');
+                Route::post('', 'store');
+            });
+
         Route::get('pages', [PageController::class, 'index']);
         Route::get('pages/connected', [ConnectedPageController::class, 'index']);
         Route::get('pages/{pageId}', [ConnectedPageController::class, 'show'])->whereNumber('pageId');

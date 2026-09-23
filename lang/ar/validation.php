@@ -162,6 +162,7 @@ return [
     'attributes' => [
         'email' => 'البريد الإلكتروني',
         'password' => 'كلمة المرور',
+        'password_confirmation' => 'تأكيد كلمة المرور',
         'name' => 'الاسم',
         'page' => 'رقم الصفحة',
         'per_page' => 'عدد العناصر في الصفحة',

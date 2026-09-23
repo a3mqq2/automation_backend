@@ -82,6 +82,44 @@ class FacebookLoginTest extends TestCase
         $this->assertSame('long-lived-token', $client->fb_access_token);
     }
 
+    public function test_facebook_login_into_a_password_account_keeps_its_name_and_email(): void
+    {
+        $client = User::factory()->withPassword()->create([
+            'fb_user_id' => '10150000000001',
+            'name' => 'Chosen Name',
+            'email' => 'chosen@example.com',
+            'avatar_url' => null,
+        ]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['access_token' => 'long-lived-token', 'expires_in' => 5184000])]);
+        $this->fakeFacebookUser();
+
+        $this->getJson('/api/auth/facebook/callback?code=auth-code&state='.app(OAuthStateStore::class)->issue())
+            ->assertOk()
+            ->assertJsonPath('user.name', 'Chosen Name')
+            ->assertJsonPath('user.email', 'chosen@example.com')
+            ->assertJsonPath('user.has_password', true);
+
+        $client->refresh();
+
+        $this->assertSame('long-lived-token', $client->fb_access_token);
+        $this->assertSame('https://cdn.example.com/layla.jpg', $client->avatar_url);
+    }
+
+    public function test_facebook_login_does_not_claim_an_email_used_by_another_account(): void
+    {
+        User::factory()->withoutFacebook()->withPassword()->create(['email' => 'layla@example.com']);
+        Http::fake(['graph.facebook.com/*' => Http::response(['access_token' => 'long-lived-token', 'expires_in' => 5184000])]);
+        $this->fakeFacebookUser();
+
+        $this->getJson('/api/auth/facebook/callback?code=auth-code&state='.app(OAuthStateStore::class)->issue())
+            ->assertOk()
+            ->assertJsonPath('user.fb_user_id', '10150000000001')
+            ->assertJsonPath('user.email', null)
+            ->assertJsonPath('user.has_password', false);
+
+        $this->assertSame(2, User::query()->count());
+    }
+
     public function test_token_exchange_failure_falls_back_to_the_short_lived_token(): void
     {
         Http::fake(['graph.facebook.com/*' => Http::response(['error' => ['message' => 'Invalid', 'code' => 100]], 400)]);

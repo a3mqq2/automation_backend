@@ -1,14 +1,356 @@
 {
   "info": {
     "name": "Meta Automation API",
-    "description": "مجموعة طلبات الـ API لمنصة أتمتة التعليقات وبوتات ماسنجر.\n\n1. عدّل المتغيرات من تبويب Variables في المجموعة (base_url، admin_email، admin_password، ...).\n2. الأدمن: نفّذ «تسجيل دخول الأدمن» ويُحفظ `admin_token` تلقائياً.\n3. العميل: نفّذ «رابط الدخول» وأكمل الدخول في المتصفح، ثم «إكمال الدخول» ويُحفظ `client_token`.\n4. طلبات الإنشاء تحفظ المعرّفات (rule_id، bot_flow_id، ...) تلقائياً لاستخدامها في الطلبات التالية.\n\nالمرجع الكامل: docs/API.md",
+    "description": "مجموعة طلبات الـ API لمنصة أتمتة التعليقات وبوتات ماسنجر.\n\n1. عدّل المتغيرات من تبويب Variables في المجموعة (base_url، admin_email، admin_password، ...).\n2. الأدمن: نفّذ «تسجيل دخول الأدمن» ويُحفظ `admin_token` تلقائياً.\n3. العميل: نفّذ «التسجيل» أو «الدخول بالبريد وكلمة المرور» ويُحفظ `client_token`، أو «رابط الدخول» ثم «إكمال الدخول» عبر فيسبوك. لربط فيسبوك بحساب مسجّل بالبريد: «رابط الربط» ثم «إكمال الربط».\n4. طلبات الإنشاء تحفظ المعرّفات (rule_id، bot_flow_id، ...) تلقائياً لاستخدامها في الطلبات التالية.\n\nالمرجع الكامل: docs/API.md",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "01 · العميل · الدخول والاشتراك",
-      "description": "دخول العميل بفيسبوك، بياناته، وتفعيل مفتاح الاشتراك. هذه الطلبات لا تتطلب اشتراكاً فعّالاً.",
+      "description": "تسجيل العميل ودخوله بالبريد وكلمة المرور أو بفيسبوك، بياناته، تفعيل مفتاح الاشتراك، وربط فيسبوك من شاشة الصفحات. التسجيل والدخول وبياناتي والتفعيل لا تتطلب اشتراكاً فعّالاً، أما ربط فيسبوك فيتطلبه.",
       "item": [
+        {
+          "name": "التسجيل بالبريد وكلمة المرور",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.token;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('client_token', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "إنشاء حساب عميل بالبريد وكلمة المرور (بدون مصادقة، 10 محاولات في الدقيقة لكل IP). يحفظ التوكن تلقائياً في `client_token`. الحساب الجديد بلا اشتراك وبلا فيسبوك: فعّل المفتاح ثم اربط فيسبوك من شاشة الصفحات.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{client_name}}\",\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\",\n  \"password_confirmation\": \"{{client_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "إنشاء حساب عميل بالبريد وكلمة المرور (بدون مصادقة، 10 محاولات في الدقيقة لكل IP). يحفظ التوكن تلقائياً في `client_token`. الحساب الجديد بلا اشتراك وبلا فيسبوك: فعّل المفتاح ثم اربط فيسبوك من شاشة الصفحات.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"{{client_name}}\",\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\",\n  \"password_confirmation\": \"{{client_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"3|Y2xpZW50LXRva2Vu...\",\n  \"user\": {\n    \"id\": 2,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": null,\n    \"has_password\": true,\n    \"fb_user_id\": null,\n    \"facebook_linked\": false,\n    \"facebook_token_expires_at\": null,\n    \"facebook_token_valid\": false,\n    \"subscription\": {\n      \"status\": \"none\",\n      \"expires_at\": null,\n      \"activated_at\": null,\n      \"license_key\": null\n    },\n    \"connected_pages_count\": 0,\n    \"last_login_at\": \"2026-09-23T10:00:00+00:00\",\n    \"created_at\": \"2026-09-23T10:00:00+00:00\"\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "إنشاء حساب عميل بالبريد وكلمة المرور (بدون مصادقة، 10 محاولات في الدقيقة لكل IP). يحفظ التوكن تلقائياً في `client_token`. الحساب الجديد بلا اشتراك وبلا فيسبوك: فعّل المفتاح ثم اربط فيسبوك من شاشة الصفحات.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"{{client_name}}\",\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\",\n  \"password_confirmation\": \"{{client_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"validation.failed\",\n  \"message\": \"البيانات المرسلة غير صالحة.\",\n  \"errors\": {\n    \"email\": [\n      \"قيمة البريد الإلكتروني مستخدمة من قبل.\"\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "الدخول بالبريد وكلمة المرور",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && (pm.response.headers.get('Content-Type') || '').includes('json')) {",
+                  "    const json = pm.response.json();",
+                  "    const value = json.token;",
+                  "    if (value !== undefined && value !== null) {",
+                  "        pm.collectionVariables.set('client_token', String(value));",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "دخول العميل بالبريد وكلمة المرور (بدون مصادقة، 5 محاولات في الدقيقة لكل بريد + IP). يحفظ التوكن تلقائياً في `client_token`. نفس الخطأ `auth.invalid_credentials` للبريد غير الموجود أو كلمة المرور الخاطئة أو حساب فيسبوك بلا كلمة مرور.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "دخول العميل بالبريد وكلمة المرور (بدون مصادقة، 5 محاولات في الدقيقة لكل بريد + IP). يحفظ التوكن تلقائياً في `client_token`. نفس الخطأ `auth.invalid_credentials` للبريد غير الموجود أو كلمة المرور الخاطئة أو حساب فيسبوك بلا كلمة مرور.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"4|Y2xpZW50LXRva2Vu...\",\n  \"user\": {\n    \"id\": 2,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": null,\n    \"has_password\": true,\n    \"fb_user_id\": null,\n    \"facebook_linked\": false,\n    \"facebook_token_expires_at\": null,\n    \"facebook_token_valid\": false,\n    \"subscription\": {\n      \"status\": \"none\",\n      \"expires_at\": null,\n      \"activated_at\": null,\n      \"license_key\": null\n    },\n    \"connected_pages_count\": 0,\n    \"last_login_at\": \"2026-09-23T10:00:00+00:00\",\n    \"created_at\": \"2026-09-23T10:00:00+00:00\"\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable Content",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "دخول العميل بالبريد وكلمة المرور (بدون مصادقة، 5 محاولات في الدقيقة لكل بريد + IP). يحفظ التوكن تلقائياً في `client_token`. نفس الخطأ `auth.invalid_credentials` للبريد غير الموجود أو كلمة المرور الخاطئة أو حساب فيسبوك بلا كلمة مرور.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"password\": \"{{client_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Unprocessable Content",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"auth.invalid_credentials\",\n  \"message\": \"البريد الإلكتروني أو كلمة المرور غير صحيحة.\"\n}"
+            }
+          ]
+        },
         {
           "name": "Facebook: رابط الدخول",
           "request": {
@@ -215,6 +557,224 @@
                   "}"
                 ]
               }
+            }
+          ]
+        },
+        {
+          "name": "Facebook: رابط الربط (من شاشة الصفحات)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/facebook/link",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "facebook",
+                "link"
+              ]
+            },
+            "description": "رابط ربط فيسبوك بالحساب الحالي (يتطلب توكن العميل واشتراكاً فعّالاً). افتحه في المتصفح؛ بعد الموافقة يعيد فيسبوك التوجيه إلى صفحة الواجهة مع `code` و`state`. انسخهما إلى `oauth_code` و`oauth_state` ثم نفّذ «إكمال الربط». الـ `state` مربوط بهذا العميل ولا يقبله مسار الدخول."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/facebook/link",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "facebook",
+                    "link"
+                  ]
+                },
+                "description": "رابط ربط فيسبوك بالحساب الحالي (يتطلب توكن العميل واشتراكاً فعّالاً). افتحه في المتصفح؛ بعد الموافقة يعيد فيسبوك التوجيه إلى صفحة الواجهة مع `code` و`state`. انسخهما إلى `oauth_code` و`oauth_state` ثم نفّذ «إكمال الربط». الـ `state` مربوط بهذا العميل ولا يقبله مسار الدخول."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"url\": \"https://www.facebook.com/v23.0/dialog/oauth?client_id=test-app-id&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Ffacebook%2Fcallback&scope=email%2Cpublic_profile%2Cpages_show_list%2Cpages_read_engagement%2Cpages_read_user_content%2Cpages_manage_metadata%2Cpages_manage_engagement%2Cpages_messaging%2Cbusiness_management&response_type=code&state=Q3lm7d0aKzP1vX8sN4bR2tY6wE9uH5jL0cF3gA7k\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Facebook: إكمال الربط",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "{{locale}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/facebook/link",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "facebook",
+                "link"
+              ]
+            },
+            "description": "يربط حساب فيسبوك بالعميل الحالي ويعيد بياناته المحدّثة داخل `data`. أخطاء محتملة: `auth.invalid_state`، `facebook.link_failed`، `facebook.account_already_linked` (409)، `subscription.inactive`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{oauth_code}}\",\n  \"state\": \"{{oauth_state}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/facebook/link",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "facebook",
+                    "link"
+                  ]
+                },
+                "description": "يربط حساب فيسبوك بالعميل الحالي ويعيد بياناته المحدّثة داخل `data`. أخطاء محتملة: `auth.invalid_state`، `facebook.link_failed`، `facebook.account_already_linked` (409)، `subscription.inactive`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"{{oauth_code}}\",\n  \"state\": \"{{oauth_state}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": {\n    \"id\": 2,\n    \"name\": \"Layla Hassan\",\n    \"email\": \"layla@example.com\",\n    \"avatar_url\": \"https://scontent.xx.fbcdn.net/layla.jpg\",\n    \"has_password\": true,\n    \"fb_user_id\": \"10150000000001\",\n    \"facebook_linked\": true,\n    \"facebook_token_expires_at\": \"2026-11-22T10:00:00+00:00\",\n    \"facebook_token_valid\": true,\n    \"subscription\": {\n      \"status\": \"active\",\n      \"expires_at\": \"2026-12-31T23:59:59+00:00\",\n      \"activated_at\": \"2026-09-23T10:05:00+00:00\",\n      \"license_key\": \"*****-*****-*****-B3LDV\"\n    },\n    \"connected_pages_count\": 0,\n    \"last_login_at\": \"2026-09-23T10:00:00+00:00\",\n    \"created_at\": \"2026-09-23T10:00:00+00:00\"\n  }\n}"
+            },
+            {
+              "name": "409 Conflict",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "{{locale}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/facebook/link",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "facebook",
+                    "link"
+                  ]
+                },
+                "description": "يربط حساب فيسبوك بالعميل الحالي ويعيد بياناته المحدّثة داخل `data`. أخطاء محتملة: `auth.invalid_state`، `facebook.link_failed`، `facebook.account_already_linked` (409)، `subscription.inactive`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"{{oauth_code}}\",\n  \"state\": \"{{oauth_state}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"facebook.account_already_linked\",\n  \"message\": \"حساب فيسبوك هذا مرتبط مسبقاً بحساب عميل آخر.\"\n}"
             }
           ]
         },
@@ -4022,6 +4582,18 @@
     },
     {
       "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "client_name",
+      "value": "Layla Hassan"
+    },
+    {
+      "key": "client_email",
+      "value": "layla@example.com"
+    },
+    {
+      "key": "client_password",
       "value": ""
     },
     {

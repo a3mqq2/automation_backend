@@ -50,6 +50,21 @@ class UserFactory extends Factory
         });
     }
 
+    public function withPassword(string $password = 'password'): static
+    {
+        return $this->state(fn () => ['password' => $password]);
+    }
+
+    public function withoutFacebook(): static
+    {
+        return $this->state(fn () => [
+            'fb_user_id' => null,
+            'avatar_url' => null,
+            'fb_access_token' => null,
+            'token_expires_at' => null,
+        ]);
+    }
+
     public function withExpiredFacebookToken(): static
     {
         return $this->state(fn () => [

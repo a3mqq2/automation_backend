@@ -22,13 +22,20 @@ class FacebookOAuthService
             ->getTargetUrl();
     }
 
-    public function userFromCallback(): SocialiteUser
+    public function userFromCallback(ErrorCode $failure = ErrorCode::FacebookLoginFailed): SocialiteUser
     {
         try {
             return $this->provider()->fields(self::PROFILE_FIELDS)->user();
         } catch (Throwable $exception) {
-            throw new ApiException(ErrorCode::FacebookLoginFailed, previous: $exception);
+            throw new ApiException($failure, previous: $exception);
         }
+    }
+
+    public function avatarUrlOf(SocialiteUser $facebookUser): ?string
+    {
+        $raw = method_exists($facebookUser, 'getRaw') ? $facebookUser->getRaw() : [];
+
+        return data_get($raw, 'picture.data.url') ?? $facebookUser->getAvatar();
     }
 
     private function provider(): Provider

@@ -2,8 +2,8 @@
 
 ## نظرة عامة
 
-منصة SaaS تتيح لأصحاب صفحات فيسبوك تسجيل الدخول بحساب فيسبوك (Social Login)،
-اختيار الصفحات التي يريدون ربطها، ثم تفعيل أتمتة:
+منصة SaaS تتيح لأصحاب صفحات فيسبوك إنشاء حساب بالبريد وكلمة المرور (أو الدخول بحساب فيسبوك
+مباشرة)، ربط حساب فيسبوك من شاشة الصفحات، اختيار الصفحات التي يريدون ربطها، ثم تفعيل أتمتة:
 
 - ردود آلية على تعليقات المنشورات (بالكلمات المفتاحية).
 - بوتات على ماسنجر (تدفقات رد آلي + ردود خاصة على التعليقات Private Reply).
@@ -47,7 +47,14 @@
 
 ### 2. العميل (صاحب الصفحة)
 
-- يسجّل دخول بحساب فيسبوك (Socialite) → يمنح صلاحيات الصفحات.
+- يسجّل حساباً بالاسم والبريد وكلمة المرور (`POST /api/auth/register`) ويدخل بهما
+  (`POST /api/auth/login`)، أو يدخل بحساب فيسبوك مباشرة (Socialite) فيُنشأ حسابه من بيانات فيسبوك.
+- الحساب المسجّل بالبريد يربط فيسبوك لاحقاً **من شاشة صفحات فيسبوك** عبر `GET|POST /api/auth/facebook/link`
+  (نفس `FACEBOOK_REDIRECT_URI`، والـ `state` مربوط بالعميل الحالي ولا يقبله مسار الدخول، ويتطلب اشتراكاً
+  فعّالاً). قبل الربط تعيد `GET /api/pages` الخطأ `403 facebook.not_linked`. حساب فيسبوك مرتبط بعميل آخر
+  يُرفض بـ `409 facebook.account_already_linked`، وإعادة الربط بنفس الحساب تجدّد التوكن.
+- دخول فيسبوك لحساب له كلمة مرور لا يغيّر اسمه أو بريده، ودخول فيسبوك لا يستولي على بريد مستخدم من
+  حساب آخر (يبقى `email` كما هو أو `null`).
 - **لا يستطيع استخدام أي ميزة أتمتة قبل تفعيل مفتاح اشتراك صالح** (Middleware
   `EnsureSubscriptionActive` أو ما شابه: يتحقق من وجود مفتاح مفعّل وغير منتهي
   الصلاحية مرتبط بحساب العميل قبل السماح بربط الصفحات أو إنشاء القواعد).
@@ -58,8 +65,9 @@
 ## الكيانات الأساسية في قاعدة البيانات
 
 - `admins` — name, email (فريد), password, last_login_at. يُنشأ عبر `php artisan admin:create`.
-- `users` (العملاء) — fb_user_id (فريد), name, email (nullable), avatar_url, fb_access_token (مشفّر),
-  token_expires_at, last_login_at.
+- `users` (العملاء) — fb_user_id (فريد، `null` للحسابات المسجّلة بالبريد قبل ربط فيسبوك), name,
+  email (فريد، `null` لحسابات فيسبوك بلا بريد), password (`hashed`، `null` لحسابات فيسبوك فقط), avatar_url,
+  fb_access_token (مشفّر), token_expires_at, last_login_at.
 - `license_keys` — key (فريد، صيغة `XXXXX-XXXXX-XXXXX-XXXXX` بدون 0/O/1/I)، expires_at،
   is_used، used_by (→ users.id)، used_at، created_by (→ admins.id)، note.
 - **الاشتراك (تم القرار)**: أعمدة على `users` وليس جدولاً منفصلاً: `subscription_expires_at`
@@ -155,11 +163,15 @@
 ## نقاط الـ API
 
 ### مصادقة العميل
+- `POST /api/auth/register` (name, email, password, password_confirmation) → `201 { token, user }`
+- `POST /api/auth/login` (email, password) → `{ token, user }` (نفس `auth.invalid_credentials` للبريد أو كلمة المرور الخاطئة)
 - `GET /api/auth/facebook/redirect` → `{ data: { url } }` (رابط فيسبوك مع state محفوظ في الكاش)
 - `GET /api/auth/facebook/callback?code&state` → `{ token, user }` (الـ redirect_uri صفحة في الواجهة
   تمرّر code/state لهذا الـ endpoint)
 - `POST /api/auth/license-key/activate` — `POST /api/auth/logout` — `GET /api/me`
   (هذه الثلاثة لا تتطلب اشتراكاً فعّالاً)
+- `GET /api/auth/facebook/link` → `{ data: { url } }` — `POST /api/auth/facebook/link` (code/state أو error) →
+  `{ data: user }` (ربط فيسبوك بالحساب الحالي؛ Sanctum + اشتراك فعّال)
 
 ### الأدمن
 - `POST /api/admin/login` — `POST /api/admin/logout` — `GET /api/admin/me`
@@ -252,7 +264,8 @@
 
 ## قواعد عمل عامة يجب اتباعها
 
-- كل توكن (fb_access_token, page_access_token) يُخزَّن مشفّراً (`encrypted` cast في Laravel).
+- كل توكن (fb_access_token, page_access_token) يُخزَّن مشفّراً (`encrypted` cast في Laravel)، وكلمة مرور
+  العميل بـ `hashed` cast، والتحقق منها عبر `PasswordVerifier` (مقارنة بزمن ثابت حتى للبريد غير الموجود).
 - أي endpoint خاص بالعميل يتحقق أولاً أن الاشتراك فعّال (middleware مخصص)، ما عدا
   تفعيل المفتاح نفسه وتسجيل الدخول.
 - معالجة أحداث Webhook تتم دائماً داخل Queue Job، والرد على طلب الـ Webhook نفسه

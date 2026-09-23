@@ -6,7 +6,9 @@ use App\Enums\ErrorCode;
 use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Support\AuthenticatedSession;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 class ClientLoginService
@@ -44,23 +46,46 @@ class ClientLoginService
 
     private function storeClient(SocialiteUser $facebookUser, FacebookAccessToken $accessToken): User
     {
-        return DB::transaction(fn (): User => User::query()->updateOrCreate(
-            ['fb_user_id' => (string) $facebookUser->getId()],
-            [
-                'name' => $facebookUser->getName() ?: (string) $facebookUser->getId(),
-                'email' => $facebookUser->getEmail(),
-                'avatar_url' => $this->avatarUrl($facebookUser),
+        return DB::transaction(function () use ($facebookUser, $accessToken): User {
+            $facebookUserId = (string) $facebookUser->getId();
+            $client = User::query()->where('fb_user_id', $facebookUserId)->first()
+                ?? new User(['fb_user_id' => $facebookUserId]);
+
+            $client->fill([
                 'fb_access_token' => $accessToken->token,
                 'token_expires_at' => $accessToken->expiresAt,
                 'last_login_at' => now(),
-            ],
-        ));
+            ]);
+
+            if (! $client->hasPassword()) {
+                $client->fill([
+                    'name' => $facebookUser->getName() ?: $facebookUserId,
+                    'email' => $this->claimableEmail($client, $facebookUser->getEmail()),
+                    'avatar_url' => $this->facebook->avatarUrlOf($facebookUser),
+                ]);
+            } elseif ($client->avatar_url === null) {
+                $client->avatar_url = $this->facebook->avatarUrlOf($facebookUser);
+            }
+
+            $client->save();
+
+            return $client;
+        });
     }
 
-    private function avatarUrl(SocialiteUser $facebookUser): ?string
+    private function claimableEmail(User $client, ?string $email): ?string
     {
-        $raw = method_exists($facebookUser, 'getRaw') ? $facebookUser->getRaw() : [];
+        if ($email === null || $email === '') {
+            return $client->email;
+        }
 
-        return data_get($raw, 'picture.data.url') ?? $facebookUser->getAvatar();
+        $email = Str::lower(trim($email));
+
+        $takenByAnotherClient = User::query()
+            ->where('email', $email)
+            ->when($client->exists, fn (Builder $query) => $query->whereKeyNot($client->getKey()))
+            ->exists();
+
+        return $takenByAnotherClient ? $client->email : $email;
     }
 }

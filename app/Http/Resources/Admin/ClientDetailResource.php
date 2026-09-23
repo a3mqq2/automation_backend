@@ -11,7 +11,9 @@ class ClientDetailResource extends ClientResource
     public function toArray(Request $request): array
     {
         return array_merge(parent::toArray($request), [
+            'has_password' => $this->hasPassword(),
             'fb_user_id' => $this->fb_user_id,
+            'facebook_linked' => $this->hasLinkedFacebook(),
             'facebook_token_expires_at' => $this->token_expires_at?->toIso8601String(),
             'active_license_key' => $this->whenLoaded(
                 'activeLicenseKey',

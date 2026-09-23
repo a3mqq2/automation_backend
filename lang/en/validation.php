@@ -166,6 +166,7 @@ return [
     'attributes' => [
         'email' => 'email',
         'password' => 'password',
+        'password_confirmation' => 'password confirmation',
         'name' => 'name',
         'page' => 'page',
         'per_page' => 'items per page',

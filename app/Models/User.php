@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['fb_user_id', 'name', 'email', 'avatar_url', 'fb_access_token', 'token_expires_at', 'last_login_at'])]
-#[Hidden(['fb_access_token'])]
+#[Fillable(['fb_user_id', 'name', 'email', 'password', 'avatar_url', 'fb_access_token', 'token_expires_at', 'last_login_at'])]
+#[Hidden(['password', 'fb_access_token'])]
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -24,6 +24,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'password' => 'hashed',
             'fb_access_token' => 'encrypted',
             'token_expires_at' => 'datetime',
             'subscription_expires_at' => 'datetime',
@@ -80,6 +81,16 @@ class User extends Authenticatable
     public function hasActiveSubscription(): bool
     {
         return $this->subscriptionStatus() === SubscriptionStatus::Active;
+    }
+
+    public function hasPassword(): bool
+    {
+        return $this->password !== null;
+    }
+
+    public function hasLinkedFacebook(): bool
+    {
+        return $this->fb_user_id !== null;
     }
 
     public function hasValidFacebookToken(): bool

@@ -21,6 +21,9 @@ return [
     'facebook' => [
         'token_expired' => 'Your Facebook authorization has expired. Please sign in with Facebook again.',
         'request_failed' => 'Facebook did not respond as expected. Please try again later.',
+        'not_linked' => 'No Facebook account is linked yet. Connect your Facebook account to see your pages.',
+        'account_already_linked' => 'This Facebook account is already linked to another client account.',
+        'link_failed' => 'Connecting your Facebook account failed. Please try again.',
     ],
     'page' => [
         'not_available' => 'This page is not available in your Facebook account.',

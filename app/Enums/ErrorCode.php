@@ -17,6 +17,9 @@ enum ErrorCode: string
     case LicenseKeyUsedCannotBeDeleted = 'license_key.used_cannot_be_deleted';
     case FacebookTokenExpired = 'facebook.token_expired';
     case FacebookRequestFailed = 'facebook.request_failed';
+    case FacebookNotLinked = 'facebook.not_linked';
+    case FacebookAccountAlreadyLinked = 'facebook.account_already_linked';
+    case FacebookLinkFailed = 'facebook.link_failed';
     case PageNotAvailable = 'page.not_available';
     case PageConnectedByAnotherAccount = 'page.connected_by_another_account';
     case PageNotConnected = 'page.not_connected';
@@ -34,10 +37,10 @@ enum ErrorCode: string
     {
         return match ($this) {
             self::Unauthenticated, self::FacebookTokenExpired => 401,
-            self::Forbidden, self::SubscriptionInactive, self::WebhookInvalidSignature, self::WebhookVerificationFailed => 403,
+            self::Forbidden, self::SubscriptionInactive, self::FacebookNotLinked, self::WebhookInvalidSignature, self::WebhookVerificationFailed => 403,
             self::PageNotAvailable, self::ResourceNotFound => 404,
             self::MethodNotAllowed => 405,
-            self::PageConnectedByAnotherAccount, self::PostAlreadyLinked => 409,
+            self::PageConnectedByAnotherAccount, self::FacebookAccountAlreadyLinked, self::PostAlreadyLinked => 409,
             self::TooManyAttempts => 429,
             self::FacebookRequestFailed => 502,
             self::ServerError => 500,

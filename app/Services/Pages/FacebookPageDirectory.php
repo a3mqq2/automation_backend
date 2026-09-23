@@ -17,6 +17,10 @@ class FacebookPageDirectory
 
     public function pagesOf(User $user): array
     {
+        if (! $user->hasLinkedFacebook()) {
+            throw new ApiException(ErrorCode::FacebookNotLinked);
+        }
+
         if (! $user->hasValidFacebookToken()) {
             throw new ApiException(ErrorCode::FacebookTokenExpired);
         }

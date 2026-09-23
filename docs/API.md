@@ -11,7 +11,7 @@
 1. [الأساسيات](#1-الأساسيات)
 2. [شكل الردود والقوائم](#2-شكل-الردود-والقوائم)
 3. [الأخطاء](#3-الأخطاء)
-4. [دخول العميل بفيسبوك وحراسة المسارات](#4-دخول-العميل-بفيسبوك-وحراسة-المسارات)
+4. [دخول العميل وربط فيسبوك وحراسة المسارات](#4-دخول-العميل-وربط-فيسبوك-وحراسة-المسارات)
 5. [endpoints العميل](#5-endpoints-العميل)
 6. [endpoints الأدمن](#6-endpoints-الأدمن)
 7. [القيم الثابتة (Enums)](#7-القيم-الثابتة-enums)
@@ -35,7 +35,7 @@
 
 ### نوعان من التوكن
 
-- **توكن العميل**: يُحصل عليه من `GET /api/auth/facebook/callback`.
+- **توكن العميل**: يُحصل عليه من `POST /api/auth/register` أو `POST /api/auth/login` أو `GET /api/auth/facebook/callback`.
 - **توكن الأدمن**: يُحصل عليه من `POST /api/admin/login`.
 
 التوكنان غير متبادلين: توكن العميل على مسار أدمن (أو العكس) يعيد `403 auth.forbidden`.
@@ -80,7 +80,7 @@
 > `meta.links` مخصص لواجهات Blade، ولا تحتاجه. ابنِ مكوّن الترقيم من `current_page` و`last_page` و`total`.
 
 **استثناءات من الشكل العام:**
-- ردّا تسجيل الدخول (`/admin/login` و`/auth/facebook/callback`) يعيدان `{ token, admin | user }` بدون `data`.
+- ردود تسجيل الدخول (`/admin/login` و`/auth/register` و`/auth/login` و`/auth/facebook/callback`) تعيد `{ token, admin | user }` بدون `data`.
 - الحذف وتسجيل الخروج يعيدان `204` بدون جسم.
 - `POST /api/admin/license-keys` يعيد دائماً مصفوفة في `data`.
 
@@ -129,7 +129,7 @@
 | --- | --- | --- | --- |
 | `auth.unauthenticated` | 401 | لا يوجد توكن، أو التوكن منتهٍ أو ملغى | امسح التوكن ووجّه لشاشة الدخول |
 | `auth.forbidden` | 403 | توكن من النوع الخطأ (عميل على مسار أدمن أو العكس) | امسح التوكن ووجّه لشاشة الدخول المناسبة |
-| `auth.invalid_credentials` | 422 | بريد أو كلمة مرور الأدمن خاطئة | رسالة في نموذج الدخول |
+| `auth.invalid_credentials` | 422 | بريد أو كلمة مرور خاطئة (العميل أو الأدمن) | رسالة في نموذج الدخول |
 | `auth.facebook_failed` | 422 | رفض المستخدم الصلاحيات أو فشل فيسبوك | رسالة + زر "حاول مجدداً" |
 | `auth.invalid_state` | 422 | رابط الدخول منتهٍ (أكثر من 10 دقائق) أو مستخدم سابقاً | ابدأ الدخول من جديد |
 | `subscription.inactive` | 403 | العميل بلا اشتراك فعّال | وجّه لشاشة "أدخل مفتاح التفعيل" |
@@ -138,8 +138,11 @@
 | `license_key.expired` | 422 | المفتاح منتهي الصلاحية | رسالة تحت الحقل |
 | `license_key.does_not_extend` | 422 | المفتاح ينتهي قبل الاشتراك الحالي | رسالة تحت الحقل |
 | `license_key.used_cannot_be_deleted` | 422 | الأدمن يحاول حذف مفتاح مستخدم | Toast |
-| `facebook.token_expired` | 401 | انتهت صلاحية ربط فيسبوك للعميل | وجّه لإعادة الدخول بفيسبوك |
+| `facebook.token_expired` | 401 | انتهت صلاحية ربط فيسبوك للعميل | شريط تنبيه يوجّه لشاشة الصفحات لإعادة ربط فيسبوك |
 | `facebook.request_failed` | 502 | فيسبوك لم يستجب كما يجب | Toast + إعادة المحاولة لاحقاً |
+| `facebook.not_linked` | 403 | العميل لم يربط حساب فيسبوك بعد | شاشة الصفحات تعرض زر "ربط فيسبوك" بدل القائمة |
+| `facebook.account_already_linked` | 409 | حساب فيسبوك مرتبط بحساب عميل آخر | رسالة في شاشة الصفحات |
+| `facebook.link_failed` | 422 | رفض المستخدم الصلاحيات أو فشل فيسبوك أثناء الربط | رسالة + زر "حاول مجدداً" |
 | `page.not_available` | 404 | الصفحة ليست في حساب العميل أو لا يملك صلاحيات إدارتها | Toast |
 | `page.connected_by_another_account` | 409 | الصفحة مربوطة بحساب عميل آخر | Toast |
 | `page.not_connected` | 422 | محاولة إلغاء ربط صفحة غير مربوطة | Toast |
@@ -149,16 +152,18 @@
 | `validation.failed` | 422 | بيانات غير صالحة | اعرض `errors` تحت الحقول |
 | `server.error` | 500 | خطأ غير متوقع | Toast عام |
 
-> رمزا `401` مختلفان: `auth.unauthenticated` يعني انتهاء جلسة المنصة، و`facebook.token_expired` يعني
-> انتهاء ربط فيسبوك. كلاهما يُحل بتسجيل الدخول بفيسبوك مجدداً، لكن اعرض رسالة مختلفة لكل منهما.
+> رمزا `401` مختلفان: `auth.unauthenticated` يعني انتهاء جلسة المنصة (امسح التوكن ووجّه للدخول)،
+> و`facebook.token_expired` يعني انتهاء ربط فيسبوك فقط: الجلسة سليمة، ويُحل بإعادة ربط فيسبوك من شاشة الصفحات.
 
 ### حدود المحاولات
 
 | المسار | الحد |
 | --- | --- |
 | `POST /api/admin/login` | 5 في الدقيقة لكل بريد + IP |
+| `POST /api/auth/login` | 5 في الدقيقة لكل بريد + IP |
+| `POST /api/auth/register` | 10 في الدقيقة لكل IP |
 | `POST /api/auth/license-key/activate` | 5 في الدقيقة لكل عميل |
-| `/api/auth/facebook/*` | 20 في الدقيقة لكل IP |
+| `/api/auth/facebook/*` (الدخول والربط) | 20 في الدقيقة لكل IP |
 
 ### مثال Axios interceptor
 
@@ -168,9 +173,11 @@ api.interceptors.response.use(
   (error) => {
     const code = error.response?.data?.code
 
-    if (code === 'auth.unauthenticated' || code === 'auth.forbidden' || code === 'facebook.token_expired') {
+    if (code === 'auth.unauthenticated' || code === 'auth.forbidden') {
       session.clear()
       router.push({ name: 'login', query: { reason: code } })
+    } else if (code === 'facebook.token_expired') {
+      session.markFacebookLinkInvalid()
     } else if (code === 'subscription.inactive') {
       router.push({ name: 'activate-license' })
     }
@@ -182,7 +189,19 @@ api.interceptors.response.use(
 
 ---
 
-## 4. دخول العميل بفيسبوك وحراسة المسارات
+## 4. دخول العميل وربط فيسبوك وحراسة المسارات
+
+للعميل طريقتان للدخول: بريد + كلمة مرور (تسجيل ذاتي)، أو حساب فيسبوك مباشرة. الحساب المسجّل بالبريد يربط
+فيسبوك لاحقاً من شاشة صفحات فيسبوك، ونفس مسار الربط يجدّد تفويضاً منتهياً لأي حساب.
+
+### 4.1 التسجيل والدخول بالبريد وكلمة المرور
+
+1. `POST /api/auth/register` بـ `{ name, email, password, password_confirmation }` → `201 { token, user }`.
+2. `POST /api/auth/login` بـ `{ email, password }` → `200 { token, user }`.
+3. الحساب الجديد بلا اشتراك وبلا فيسبوك: `user.subscription.status = 'none'` و`user.facebook_linked = false`.
+   بعد تفعيل المفتاح يربط العميل فيسبوك من شاشة الصفحات (4.3).
+
+### 4.2 الدخول بفيسبوك
 
 `FACEBOOK_REDIRECT_URI` في الـ API يشير إلى **صفحة في الواجهة**، مثل `https://app.example.com/auth/facebook/callback`.
 
@@ -203,13 +222,38 @@ api.interceptors.response.use(
 4. `state` صالح لمرة واحدة ولمدة 10 دقائق فقط. إن أعدت تحميل صفحة الـ callback فسيعود `auth.invalid_state`،
    وعندها ابدأ الدخول من جديد.
 
+### 4.3 ربط فيسبوك من شاشة الصفحات
+
+للحسابات المسجّلة بالبريد، ولإعادة الربط عند انتهاء التفويض أو لتبديل حساب فيسبوك. يتطلب توكن العميل واشتراكاً فعّالاً.
+
+```
+الواجهة (بتوكن العميل)             الـ API                         فيسبوك
+   │ GET /auth/facebook/link ─────►│
+   │◄──── { data: { url } } ────────│
+   │ احفظ نية "ربط" محلياً ثم window.location = url ──────────────►│
+   │◄──────────── إعادة توجيه إلى /auth/facebook/callback?code&state │
+   │ POST /auth/facebook/link { code, state } ─►│
+   │◄──── { data: user } ───────────│
+```
+
+1. زر "ربط فيسبوك" في شاشة الصفحات يستدعي `GET /api/auth/facebook/link` ثم يوجّه المتصفح إلى `data.url`.
+   نفس `FACEBOOK_REDIRECT_URI` يُستخدم للدخول والربط، لذلك تحفظ الواجهة علامة "ربط" في `sessionStorage`
+   قبل التوجيه لتعرف صفحة الـ callback أي مسار تستدعي.
+2. صفحة `/auth/facebook/callback` ترسل `code` و`state` (أو `error`) إلى `POST /api/auth/facebook/link`
+   مع توكن العميل، وتحدّث `user` من الرد ثم تعود لشاشة الصفحات.
+3. الـ `state` مربوط بالعميل الذي طلبه: لا يقبله مسار الدخول، ولا يقبل مسار الربط `state` صادراً للدخول
+   أو لعميل آخر (`auth.invalid_state`).
+4. حساب فيسبوك مرتبط بعميل آخر → `409 facebook.account_already_linked`. إعادة الربط بنفس الحساب تجدّد
+   التوكن فقط، ولا تغيّر اسم العميل أو بريده.
+
 ### حارس المسارات المقترح
 
 | الحالة | التوجيه |
 | --- | --- |
 | لا يوجد توكن عميل | شاشة الدخول |
 | `me.subscription.status !== 'active'` | شاشة "أدخل مفتاح التفعيل" (`none` = لم يشترك، `expired` = انتهى اشتراكه) |
-| `me.facebook_token_valid === false` | شريط تنبيه "أعد ربط حساب فيسبوك" (قائمة الصفحات ستفشل بـ `facebook.token_expired`) |
+| `me.facebook_linked === false` | شاشة الصفحات تعرض "اربط حسابك على فيسبوك" بدل القائمة (`GET /api/pages` يعيد `403 facebook.not_linked`) |
+| `me.facebook_linked && !me.facebook_token_valid` | شريط تنبيه "أعد ربط فيسبوك" يوجّه لشاشة الصفحات (قائمة الصفحات ستفشل بـ `facebook.token_expired`) |
 | غير ذلك | لوحة التحكم |
 
 المسارات التي **لا تتطلب** اشتراكاً فعّالاً: `/api/me` و`/api/auth/license-key/activate` و`/api/auth/logout`.
@@ -219,9 +263,37 @@ api.interceptors.response.use(
 
 ## 5. endpoints العميل
 
-كل الطلبات هنا تتطلب `Authorization: Bearer {client_token}`، ما عدا طلبي فيسبوك.
+كل الطلبات هنا تتطلب `Authorization: Bearer {client_token}`، ما عدا التسجيل والدخول وطلبي دخول فيسبوك.
 
 ### 5.1 الدخول والحساب
+
+#### `POST /api/auth/register`
+
+بدون مصادقة. ينشئ حساب عميل بالبريد وكلمة المرور ويعيد `201`.
+
+```json
+{
+  "name": "Layla Hassan",
+  "email": "layla@example.com",
+  "password": "secret-pass-1",
+  "password_confirmation": "secret-pass-1"
+}
+```
+
+الرد بنفس شكل رد `callback` أدناه (`{ token, user }`) مع `has_password: true` و`facebook_linked: false` و`fb_user_id: null`.
+البريد يُحفظ بأحرف صغيرة، وكلمة المرور 8 أحرف على الأقل.
+أخطاء محتملة: `validation.failed` (البريد مستخدم، أو كلمة المرور قصيرة أو غير متطابقة)، `request.too_many_attempts`.
+
+#### `POST /api/auth/login`
+
+بدون مصادقة.
+
+```json
+{ "email": "layla@example.com", "password": "secret-pass-1" }
+```
+
+يعيد `{ token, user }`. أخطاء محتملة: `auth.invalid_credentials` (نفس الرسالة للبريد غير الموجود، أو كلمة المرور
+الخاطئة، أو حساب فيسبوك بلا كلمة مرور)، `request.too_many_attempts`.
 
 #### `GET /api/auth/facebook/redirect`
 
@@ -243,7 +315,9 @@ api.interceptors.response.use(
     "name": "Layla Hassan",
     "email": "layla@example.com",
     "avatar_url": "https://scontent.xx.fbcdn.net/layla.jpg",
+    "has_password": false,
     "fb_user_id": "10150000000001",
+    "facebook_linked": true,
     "facebook_token_expires_at": "2026-11-18T10:00:00+00:00",
     "facebook_token_valid": true,
     "subscription": {
@@ -264,6 +338,8 @@ api.interceptors.response.use(
 #### `GET /api/me`
 
 يعيد نفس كائن `user` السابق داخل `data`. `email` قد يكون `null` (حسابات فيسبوك المسجلة برقم هاتف).
+`has_password` يميّز الحسابات المسجّلة بالبريد، و`facebook_linked` يصبح `true` بعد ربط فيسبوك (وقبله `fb_user_id = null`
+و`facebook_token_valid = false`).
 لعميل بلا اشتراك: `subscription = { "status": "none", "expires_at": null, "activated_at": null, "license_key": null }`.
 
 #### `POST /api/auth/license-key/activate`
@@ -291,6 +367,22 @@ api.interceptors.response.use(
 #### `POST /api/auth/logout`
 
 يلغي التوكن الحالي فقط → `204`.
+
+#### `GET /api/auth/facebook/link`
+
+يتطلب توكن العميل واشتراكاً فعّالاً. يعيد `{ data: { url } }` مثل `redirect`، لكن الـ `state` مربوط بالعميل الحالي.
+
+#### `POST /api/auth/facebook/link`
+
+يتطلب توكن العميل واشتراكاً فعّالاً. الجسم: `{ code, state }`، أو `{ error, state }` إذا رفض المستخدم.
+
+```json
+{ "code": "AQD...", "state": "TJgAIgZPRZqMOFWP7VOu5aip82em3zbm3Hb155hi" }
+```
+
+يعيد كائن `user` داخل `data` (نفس شكل `/api/me`) بعد الربط، مع `facebook_linked: true`.
+أخطاء محتملة: `auth.invalid_state`، `facebook.link_failed`، `facebook.account_already_linked`، `subscription.inactive`،
+`validation.failed`.
 
 ### 5.2 الصفحات
 
@@ -630,7 +722,9 @@ step.image_url = data.data.url
 ```json
 {
   "data": {
+    "has_password": false,
     "fb_user_id": "10150000000001",
+    "facebook_linked": true,
     "facebook_token_expires_at": "2026-11-18T10:00:00+00:00",
     "active_license_key": {
       "id": 1,
